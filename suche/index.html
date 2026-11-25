@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intelligente Suche</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Intelligente Suche</h1>
+      <p class="lead">Eine Eingabe – die Anwendung erkennt automatisch, wonach gesucht wird.</p>
+    </header>
+
+    <form id="searchForm" class="search" autocomplete="off" role="search">
+      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="z. B. Müller, Max 01.01.1980 · M-AB 1234 · 0171 1234567 · 94.122.123.4"
+             aria-label="Suchbegriff" spellcheck="false" autofocus>
+      <button type="submit">Suchen</button>
+    </form>
+
+    <ul class="criteria" id="criteria" aria-label="Suchkriterien">
+      <li data-id="1"><span class="num">1</span>Name / Geburtsdatum / Adresse (DE)</li>
+      <li data-id="2"><span class="num">2</span>Kfz-Kennzeichen</li>
+      <li data-id="3"><span class="num">3</span>Telefonnummer</li>
+      <li data-id="4"><span class="num">4</span>E-Mail</li>
+      <li data-id="5"><span class="num">5</span>Versicherungsscheinnummer</li>
+    </ul>
+    <p class="rule">Die Kriterien 1–5 sind nicht kombinierbar. Innerhalb von Kriterium 1 sind Name, Geburtsdatum und Adresse frei kombinierbar.</p>
+
+    <section id="result" class="result" aria-live="polite"></section>
+
+    <details class="examples" open>
+      <summary>Beispiele zum Ausprobieren</summary>
+      <div id="examples" class="chips"></div>
+    </details>
+  </main>
+  <script src="parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
