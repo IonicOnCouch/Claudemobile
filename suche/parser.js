@@ -181,8 +181,8 @@
 
   function analyzeKfz(raw) {
     let s = raw.trim().replace(/\s+/g, ' ');
-    if (!/^[A-Za-zÄÖÜäöü0-9 \-:()/]+$/.test(s) || !/\d/.test(s)) return null;
-    const typedUpper = s === s.toUpperCase();
+    // Kennzeichen müssen mit Bindestrich eingegeben werden (z. B. "M-AB 1234")
+    if (!/^[A-Za-zÄÖÜäöü0-9 \-()/]+$/.test(s) || !/\d/.test(s) || !/-/.test(s)) return null;
     const U = s.toUpperCase();
     let m;
 
@@ -197,19 +197,19 @@
       return r;
     }
     if (!/[A-ZÄÖÜ]/.test(U)) return null;
-    if ((m = U.match(/^Y[\s-]?(\d{1,3})[\s-]?(\d{3})$/))) {
+    if ((m = U.match(/^Y\s?-\s?(\d{1,3})\s?(\d{3})$/))) {
       const r = make('Bundeswehr');
       add(r, 'kennzeichen', 'Kennzeichen', 'Y-' + m[1] + ' ' + m[2]);
       add(r, 'erkennungsnummer', 'Nummer', m[1] + m[2]);
       return r;
     }
-    if ((m = U.match(/^X[\s-]?(\d{4})$/))) {
+    if ((m = U.match(/^X\s?-\s?(\d{4})$/))) {
       const r = make('NATO-Hauptquartier');
       add(r, 'kennzeichen', 'Kennzeichen', 'X-' + m[1]);
       add(r, 'erkennungsnummer', 'Nummer', m[1]);
       return r;
     }
-    if ((m = U.match(/^THW[\s-]?(\d{1,5})$/))) {
+    if ((m = U.match(/^THW\s?-\s?(\d{1,5})$/))) {
       const r = make('Bundesanstalt Technisches Hilfswerk');
       add(r, 'kennzeichen', 'Kennzeichen', 'THW-' + m[1]);
       add(r, 'unterscheidungszeichen', 'Unterscheidungszeichen', 'THW');
@@ -217,7 +217,7 @@
       return r;
     }
     const federal = { BP: 'Bundespolizei', BD: 'Bundesorgane (Bundestag, Bundesrat, Bundesregierung)', BW: 'Bundeswasserstraßen- und Schifffahrtsverwaltung' };
-    if ((m = U.match(/^(BP|BD|BW)[\s-]?(\d{1,2})[\s-]?(\d{1,4})$/)) && (typedUpper || /-/.test(s))) {
+    if ((m = U.match(/^(BP|BD|BW)[\s-]?(\d{1,2})[\s-]?(\d{1,4})$/)) ) {
       const r = make('Bundesbehörde – ' + federal[m[1]]);
       add(r, 'kennzeichen', 'Kennzeichen', m[1] + ' ' + m[2] + '-' + m[3]);
       add(r, 'unterscheidungszeichen', 'Unterscheidungszeichen', m[1]);
@@ -237,7 +237,7 @@
     let core = s.toUpperCase().trim();
 
     // --- Rote Kennzeichen / Kurzzeitkennzeichen (Nummer beginnt mit 0x)
-    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})[\s:-]*(0[3-7])[\s-]?([1-9]\d{0,3}|\d{1,4})$/))) {
+    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})\s?-\s?(0[3-7])\s?(\d{1,4})$/))) {
       const kinds = { '03': 'Kurzzeitkennzeichen', '04': 'Kurzzeitkennzeichen', '05': 'Rotes Kennzeichen (Prüfungs-/Probe-/Überführungsfahrten)', '06': 'Rotes Kennzeichen (Kfz-Handel/-Handwerk)', '07': 'Rotes Kennzeichen für Oldtimer (07er)' };
       const r = make(kinds[m[2]]);
       add(r, 'kennzeichen', 'Kennzeichen', m[1] + '-' + m[2] + m[3]);
@@ -248,7 +248,7 @@
     }
 
     // --- Ausfuhrkennzeichen: Bezirk + Ziffern + Buchstabe
-    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})[\s:-]+([1-9]\d{0,3})\s?([A-DF-GI-Z])$/))) {
+    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})\s?-\s?([1-9]\d{0,3})\s?([A-DF-GI-Z])$/))) {
       const r = make('Ausfuhrkennzeichen');
       add(r, 'kennzeichen', 'Kennzeichen', m[1] + '-' + m[2] + m[3]);
       add(r, 'unterscheidungszeichen', 'Unterscheidungszeichen', m[1], 'Zulassungsbezirk');
@@ -261,7 +261,7 @@
     if ((m = core.match(/^(.*\d)\s?([EH])$/))) { suffix = m[2]; core = m[1].trim(); }
 
     // --- Behördenkennzeichen: Bezirk + nur Ziffern
-    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})[\s:-]+([1-9]\d{0,5})$/)) && (typedUpper || /-/.test(s))) {
+    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})\s?-\s?([1-9]\d{0,5})$/))) {
       if (m[1].length + m[2].length <= 8) {
         const r = make('Behördenkennzeichen (Landes-/Kommunalbehörde)');
         add(r, 'kennzeichen', 'Kennzeichen', m[1] + '-' + m[2] + (suffix || ''));
@@ -274,19 +274,7 @@
 
     // --- Standardkennzeichen
     const candidates = [];
-    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})[\s:-]+([A-Z]{1,2})[\s-]*(\d{1,4})$/))) {
-      candidates.push([m[1], m[2], m[3]]);
-    } else if ((m = s.trim().match(/^([A-Za-zÄÖÜäöü]{2,5})[\s-]*(\d{1,4})\s?[EHeh]?$/))) {
-      const letters = m[1];
-      // gemischte Schreibweise ("Ring 3") ist eher ein Wort als ein Kennzeichen
-      if (letters !== letters.toUpperCase() && letters !== letters.toLowerCase()) return null;
-      const L = letters.toUpperCase();
-      const num = m[2];
-      for (let d = Math.min(3, L.length - 1); d >= 1; d--) {
-        const mid = L.slice(d);
-        if (mid.length >= 1 && mid.length <= 2 && !/[ÄÖÜ]/.test(mid)) candidates.push([L.slice(0, d), mid, num]);
-      }
-    }
+    if ((m = core.match(/^([A-ZÄÖÜ]{1,3})\s?-\s?([A-Z]{1,2})\s?(\d{1,4})$/))) candidates.push([m[1], m[2], m[3]]);
     const valid = candidates.filter(([d, l, n]) => !n.startsWith('0') && (d.length + l.length + n.length) <= 8);
     if (!valid.length) {
       if (candidates.length) {
@@ -308,10 +296,6 @@
       return r;
     };
     const primary = build(valid[0]);
-    if (valid.length > 1) {
-      primary.warnings.push('Trennung zwischen Unterscheidungszeichen und Erkennungsbuchstaben nicht eindeutig (Bindestrich/Leerzeichen fehlt).');
-      for (const c of valid.slice(1)) primary.alternatives.push({ label: 'Alternative Lesart: ' + c[0] + '-' + c[1] + ' ' + c[2] + (suffix || ''), result: build(c) });
-    }
     return primary;
   }
   function errorResultKfz(msg) { const r = result('kfz'); r.errors.push(msg); return r; }
@@ -330,11 +314,10 @@
   const MONTH_ALT = Object.keys(MONTH_WORDS).sort((a, b) => b.length - a.length).join('|');
   const PREFIX = '(?:(?:geb(?:oren)?\\.?\\s*(?:am\\s*)?|\\*\\s*))?';
   const DATE_PATTERNS = [
-    { re: new RegExp(PREFIX + '(?<!\\d)(\\d{1,2})\\s*[./]\\s*(\\d{1,2})\\s*[./]\\s*(\\d{4}|\\d{2})(?!\\d)', 'giu'), order: 'dmy' },
-    { re: new RegExp(PREFIX + '(?<!\\d)(\\d{4})-(\\d{1,2})-(\\d{1,2})(?!\\d)', 'giu'), order: 'ymd' },
-    { re: new RegExp(PREFIX + '(?<!\\d)(\\d{1,2})\\.?\\s*(' + MONTH_ALT + ')\\.?\\s+(\\d{4})(?!\\d)', 'giu'), order: 'dMy' },
-    { re: new RegExp(PREFIX + '(?<![\\d.])(\\d{2})(\\d{2})(\\d{4})(?![\\d.])', 'giu'), order: 'dmy', compact: true }
+    { re: new RegExp(PREFIX + '(?<![\\d.])(\\d{1,2})\\.\\s?(\\d{1,2})\\.\\s?(\\d{4}|\\d{2})(?![\\d.])', 'giu'), order: 'dmy' }
   ];
+  // Datumsangaben in anderen Formaten -> Fehler
+  const FOREIGN_DATE = new RegExp('(?<!\\d)\\d{4}-\\d{1,2}-\\d{1,2}(?!\\d)|(?<!\\d)\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}(?!\\d)|(?<!\\d)\\d{1,2}\\.?\\s*(?:' + MONTH_ALT + ')\\.?\\s+\\d{2,4}(?!\\d)', 'iu');
 
   function buildDate(d, mo, y, today) {
     let note = '';
@@ -363,10 +346,7 @@
         if (found.some((f) => start < f.end && end > f.start)) continue;
         let d, mo, y;
         if (p.order === 'dmy') { d = m[1]; mo = m[2]; y = m[3]; }
-        else if (p.order === 'ymd') { y = m[1]; mo = m[2]; d = m[3]; }
-        else { d = m[1]; mo = MONTH_WORDS[m[2].toLowerCase()]; y = m[3]; }
         const res = buildDate(d, mo, y, today);
-        if (p.compact && res.invalid) continue; // 8 Ziffern ohne gültiges Datum -> kein Datum
         found.push({ start, end, res, raw: m[0] });
       }
     }
@@ -382,6 +362,7 @@
   const STREET_SUFFIX_WEAK = /(ring|damm|ufer|pfad|steig|stieg|markt|hof|berg|graben|kamp|wall|zeile|brücke|garten|park|feld|tor|bogen|winkel|anger|höhe|siedlung|kai|wiese|grund|tal|bach|heide|holz|busch|rain|steg|hain)$/i;
   const STREET_STANDALONE = /^(straße|strasse|str\.?|weg|allee|platz|gasse|ring|damm|ufer|chaussee|markt|pfad|steig|promenade|landstraße|chaussee)$/i;
   const STREET_PREFIX = /^(am|an|auf|aufm|im|in|zum|zur|zu|unter|unterm|hinter|hinterm|vor|vorm|bei|beim|über|alte|alter|alten|altes|alt|neue|neuer|neuen|große|großer|großen|kleine|kleiner|kleinen|lange|langer|langen|hohe|hoher|hohen|obere|oberer|untere|unterer|der|die|das|den|dem|des|st\.|sankt|sankt-)$/i;
+  const STREET_START = /^(am|an|auf|im|zum|zur|unter|hinter|vor|beim|über|alte|alter|alten|neue|neuer|neuen|große|großer|kleine|kleiner|lange|langer|hohe|hoher)$/i;
   const HOUSE_NO = /^\d{1,4}[a-zA-Z]?(?:[-/]\d{1,4}[a-zA-Z]?)?$/;
   const CITY_CONNECT = /^(am|an|der|die|den|im|in|ob|bei|vor|a\.|a\.d\.|i\.|v\.d\.|d\.|o\.)$/i;
   const CITY_PREFIX = /^(bad|st\.|sankt|neu|groß|klein|alt|hohen|ostseebad|nordseebad|markt|stadt)$/i;
@@ -409,8 +390,7 @@
     if (/\S+@\S+/.test(str)) found.push('E-Mail');
     if (/(?<![\d.])\d{2}\.\d{3}\.\d{3}\.\d(?![\d.])/.test(str)) found.push('Versicherungsscheinnummer');
     if (/(?:\+|(?<!\d)00)\d[\d\s/()-]{5,}\d/.test(str) || /(?<![\d.])0\d{2,5}[\s/-]?\d{4,}(?![\d.])/.test(str)) found.push('Telefonnummer');
-    if (/(?:^|[\s,;])[A-ZÄÖÜ]{1,3}[-:][A-Z]{1,2}[\s-]?[1-9]\d{0,3}[EH]?(?=$|[\s,;])/.test(str) ||
-        /(?:^|[\s,;])[A-ZÄÖÜ]{1,3}\s[A-Z]{1,2}\s[1-9]\d{0,3}[EH]?(?=$|[\s,;])/.test(str)) found.push('Kfz-Kennzeichen');
+    if (/(?:^|[\s,;])[A-ZÄÖÜ]{1,3}\s?-\s?[A-Z]{0,2}\s?[1-9]\d{0,3}[EH]?(?=$|[\s,;])/i.test(str)) found.push('Kfz-Kennzeichen');
     return found;
   }
 
@@ -419,6 +399,11 @@
 
     // 1) Geburtsdaten herauslösen
     const { dates, rest } = extractDates(input, today);
+    const fd = rest.match(FOREIGN_DATE);
+    if (fd) {
+      const e = errorResult('Datum „' + fd[0].trim() + '“ bitte im deutschen Format TT.MM.JJJJ eingeben (z. B. 01.04.1980).');
+      return e;
+    }
     if (dates.length > 1) r.errors.push('Mehrere Datumsangaben gefunden – bitte nur ein Geburtsdatum angeben.');
 
     // 2) Unzulässige Kombinationen mit anderen Kriterien
@@ -542,15 +527,21 @@
         }
       }
     }
-    // Ort ohne PLZ: eigenes Segment nach der Straße
-    if (!city && street && segCount > 1) {
-      const streetSeg = tokens.find((x) => x.used && street.startsWith(x.t)).seg;
-      const nextSeg = tokens.filter((x) => x.seg === streetSeg + 1);
-      if (nextSeg.length && nextSeg.every((x) => isWord(x) || /^\(/.test(x.t))) {
-        nextSeg.forEach((x) => (x.used = true));
-        city = nextSeg.map((x) => x.t).join(' ');
+    // Straße ohne Hausnummer, die mit Präposition beginnt ("Am Markt", "Zur Linde") – nur als eigenes Segment
+    if (!street) {
+      for (let i = 0; i < tokens.length; i++) {
+        const x = tokens[i];
+        if (!isWord(x) || !STREET_START.test(x.t) || (i > 0 && inSeg(i - 1, x.seg))) continue;
+        const segToks = tokens.filter((y) => y.seg === x.seg);
+        if (segToks.length >= 2 && segToks.every(isWord)) {
+          segToks.forEach((y) => (y.used = true));
+          street = segToks.map((y) => y.t).join(' ');
+          break;
+        }
       }
     }
+    // Position der Adressbestandteile (alles danach kann nur noch Ort sein)
+    const addrEnd = tokens.reduce((max, x, i) => (x.used ? i : max), -1);
 
     // 6) Anrede, Titel, Geburtsname
     for (let i = 0; i < tokens.length; i++) {
@@ -565,42 +556,83 @@
       }
     }
 
-    // 7) Rest = Name
-    const leftovers = tokens.filter((x) => !x.used);
-    const nameToks = leftovers.filter((x) => NAME_TOKEN.test(x.t));
-    const junk = leftovers.filter((x) => !NAME_TOKEN.test(x.t));
-    let firstName = null, lastName = null, nameNote = '';
-    if (nameToks.length) {
-      const segs = [...new Set(nameToks.map((x) => x.seg))];
-      if (segs.length >= 2) {
-        // "Müller, Max" -> Nachname, Vorname
-        lastName = nameToks.filter((x) => x.seg === segs[0]).map((x) => normName(x.t)).join(' ');
-        firstName = nameToks.filter((x) => x.seg === segs[1]).map((x) => normName(x.t)).join(' ');
-        nameNote = 'Schreibweise „Nachname, Vorname“ erkannt';
-        if (segs.length > 2) r.warnings.push('Mehr Namensbestandteile als erwartet: ' + nameToks.filter((x) => x.seg > segs[1]).map((x) => x.t).join(' '));
-      } else if (nameToks.length === 1) {
-        const w = nameToks[0].t;
-        if (FIRST_NAMES.has(w.toLowerCase())) { firstName = normName(w); r.warnings.push('Nur ein Vorname angegeben – Nachname fehlt.'); }
-        else { lastName = normName(w); nameNote = 'Einzelner Name als Nachname interpretiert'; }
-      } else {
-        const words = nameToks.map((x) => x.t);
-        const isFirst = (w) => FIRST_NAMES.has(w.toLowerCase().split('-')[0]);
-        // Nachnamen-Beginn: erste Namenspartikel (von, van, de ...) nach dem ersten Wort
-        let p = words.findIndex((w, idx) => idx > 0 && PARTICLES.test(w));
-        if (p > 0) {
-          firstName = words.slice(0, p).map(normName).join(' ');
-          lastName = words.slice(p).map(normName).join(' ');
-          nameNote = 'Namenszusatz erkannt';
-        } else if (!isFirst(words[0]) && isFirst(words[words.length - 1])) {
-          lastName = words.slice(0, -1).map(normName).join(' ');
-          firstName = normName(words[words.length - 1]);
-          nameNote = 'Reihenfolge „Nachname Vorname“ anhand bekannter Vornamen erkannt';
-        } else {
-          firstName = words.slice(0, -1).map(normName).join(' ');
-          lastName = normName(words[words.length - 1]);
-          nameNote = isFirst(words[0]) ? 'Vorname anhand bekannter Vornamen erkannt' : 'Reihenfolge „Vorname Nachname“ angenommen';
-          if (!isFirst(words[0])) r.warnings.push('Reihenfolge von Vor- und Nachname nicht sicher – „Vorname Nachname“ angenommen. Eindeutig: „Nachname, Vorname“.');
+    // 7) Restliche Wörter: Nachname / Vorname / Ort
+    //    Regeln: Name steht vorn. Vorname nur nach Komma hinter dem Nachnamen ("Müller, Max").
+    //    Ort = nach PLZ, nach der Straße oder bekannte Stadt.
+    const junk = tokens.filter((x) => !x.used && !NAME_TOKEN.test(x.t));
+    junk.forEach((x) => (x.used = true));
+    const groups = [];
+    tokens.forEach((x, i) => {
+      if (x.used) return;
+      let g = groups[groups.length - 1];
+      if (!g || g.seg !== x.seg || g.last !== i - 1) groups.push((g = { seg: x.seg, first: i, toks: [] }));
+      g.toks.push(x); g.last = i;
+    });
+    const text = (toks) => toks.map((x) => x.t).join(' ');
+    const cityOf = (toks) => (root.GermanCities && root.GermanCities.isCity(text(toks)) ? text(toks) : null);
+    const isFirst = (w) => FIRST_NAMES.has(w.toLowerCase().split('-')[0]);
+    let firstName = null, lastName = null, nameNote = '', cityNote = '', ambiguous = null;
+    const nameGroups = [];
+    for (const g of groups) {
+      if (addrEnd >= 0 && g.first > addrEnd && (street || plz)) {
+        // steht hinter Straße/PLZ -> Ort
+        if (!city) { city = text(g.toks); cityNote = cityOf(g.toks) ? 'bekannte Stadt' : 'aus Position hinter der Straße abgeleitet'; }
+        else junk.push(...g.toks);
+      } else nameGroups.push(g);
+    }
+    if (nameGroups.length) {
+      let g0 = nameGroups[0];
+      let toks = g0.toks;
+      // nur ein Begriff ohne weitere Angaben -> Ort oder Nachname?
+      const alone = nameGroups.length === 1 && !city && !street && !plz && !salutation.length && !titles.length && !birthName;
+      if (alone && cityOf(toks)) {
+        city = text(toks); cityNote = 'bekannte Stadt';
+        ambiguous = { label: 'Alternative: Nachname „' + city + '“', key: 'nachname', paramLabel: 'Nachname', value: toks.map((x) => normName(x.t)).join(' ') };
+        toks = [];
+      } else if (!city) {
+        // Ort am Ende ohne Komma: "Müller Berlin"
+        for (let k = 1; k < toks.length; k++) {
+          if (cityOf(toks.slice(k))) { city = text(toks.slice(k)); cityNote = 'bekannte Stadt'; toks = toks.slice(0, k); break; }
         }
+      }
+      if (toks.length) {
+        const words = toks.map((x) => x.t);
+        // mehrteiliger Nachname nur mit Namenszusatz am Anfang ("von Bergen")
+        const particleStart = PARTICLES.test(words[0]);
+        if (words.length > 1 && !particleStart) {
+          let p = words.findIndex((w, i) => i > 0 && PARTICLES.test(w));
+          if (p < 0) p = words.length - 1;
+          r.errors.push('„' + words.join(' ') + '“: Vorname bitte mit Komma hinter dem Nachnamen angeben, z. B. „' + words.slice(p).join(' ') + ', ' + words.slice(0, p).join(' ') + '“ (Doppelnamen mit Bindestrich).');
+        } else {
+          lastName = words.map(normName).join(' ');
+          if (alone && !city && words.length === 1) {
+            ambiguous = { label: 'Alternative: Ort „' + words[0] + '“', key: 'ort', paramLabel: 'Ort', value: words[0] };
+            nameNote = 'Einzelbegriff – als Nachname interpretiert';
+          }
+          if (words.length === 1 && isFirst(words[0]) && nameGroups.length === 1) {
+            r.warnings.push('„' + words[0] + '“ ist ein häufiger Vorname. Vornamen nur zusammen mit Nachnamen: „Nachname, Vorname“.');
+          }
+        }
+      }
+      // Vorname: Gruppe direkt nach dem Nachnamen, durch Komma getrennt
+      let rest = nameGroups.slice(1);
+      const g1 = rest[0];
+      if (g1 && toks.length && g1.seg === g0.seg + 1) {
+        rest = rest.slice(1);
+        if (!city && cityOf(g1.toks) && !isFirst(g1.toks[0].t)) {
+          city = text(g1.toks); cityNote = 'bekannte Stadt';
+          ambiguous = { label: 'Alternative: Vorname „' + city + '“', key: 'vorname', paramLabel: 'Vorname', value: city, replaces: 'ort' };
+        } else {
+          firstName = g1.toks.map((x) => normName(x.t)).join(' ');
+          nameNote = 'Vorname nach Komma';
+        }
+      } else if (g1 && !toks.length && !lastName) {
+        // kein Nachname vorhanden
+      }
+      for (const g of rest) {
+        if (!city && cityOf(g.toks)) { city = text(g.toks); cityNote = 'bekannte Stadt'; }
+        else if (!lastName && !firstName && !city) { city = text(g.toks); }
+        else junk.push(...g.toks);
       }
     }
     if (junk.length) r.warnings.push('Nicht zuordenbar: ' + junk.map((x) => '„' + x.t + '“').join(', '));
@@ -608,8 +640,8 @@
     // 8) Ausgabe
     if (salutation.length) add(r, 'anrede', 'Anrede', salutation[0]);
     if (titles.length) add(r, 'titel', 'Titel', titles.join(' '));
-    if (firstName) add(r, 'vorname', 'Vorname', firstName, nameNote);
     if (lastName) add(r, 'nachname', 'Nachname', lastName, firstName ? '' : nameNote);
+    if (firstName) add(r, 'vorname', 'Vorname', firstName, nameNote);
     if (birthName) add(r, 'geburtsname', 'Geburtsname', birthName);
     if (dates.length) {
       const d = dates[0].res;
@@ -622,9 +654,16 @@
     }
     if (houseNo) add(r, 'hausnummer', 'Hausnummer', houseNo);
     if (plz) add(r, 'plz', 'PLZ', plz);
-    if (city) add(r, 'ort', 'Ort', city);
+    if (city) add(r, 'ort', 'Ort', city, cityNote);
     if (plz || street || city) add(r, 'land', 'Land', 'DE', 'nur Adressen in Deutschland');
 
+    if (ambiguous && !r.errors.length) {
+      const drop = ambiguous.replaces || (ambiguous.key === 'nachname' ? 'ort' : 'nachname');
+      const altParams = r.params.filter((p) => p.key !== drop && !(p.key === 'land' && drop === 'ort' && !plz && !street));
+      altParams.push({ key: ambiguous.key, label: ambiguous.paramLabel, value: ambiguous.value, note: '' });
+      r.alternatives.push({ label: ambiguous.label, result: { params: altParams } });
+      r.warnings.push('Einzelbegriff mehrdeutig (Name oder Ort) – siehe alternative Interpretation. Eindeutig z. B. mit PLZ („12345 Berlin“).');
+    }
     if (!r.params.length && !r.errors.length) {
       return errorResult('Eingabe konnte keinem Suchkriterium zugeordnet werden.');
     }
@@ -654,25 +693,20 @@
     if (v) return v;
     if (looksLikeBrokenVsnr(s)) return errorResult('Versicherungsscheinnummer unvollständig oder falsch gegliedert – erwartet: 94.122.123.4');
 
-    // Mehrdeutig: 8 Ziffern = Datum (TTMMJJJJ) oder Telefonnummer
-    if (/^\d{8}$/.test(s)) {
-      const d = buildDate(s.slice(0, 2), s.slice(2, 4), s.slice(4), today);
-      if (!d.invalid) {
-        const p = analyzePerson(s, today);
-        const ph = s.startsWith('0') ? analyzePhone(s) : null;
-        if (ph) {
-          p.warnings.push('Mehrdeutig: könnte auch eine Telefonnummer sein.');
-          p.alternatives.push({ label: 'Alternative: Telefonnummer', result: ph });
-        }
-        return p;
-      }
-    }
     // 2. Kfz-Kennzeichen
     const k = analyzeKfz(s);
     if (k) return k;
+    if (/^[A-ZÄÖÜ]{1,3}\s[A-Z]{1,2}\s?[1-9]\d{0,3}\s?[EH]?$/i.test(s) && !/^(am|an|im|in|zu|auf)\s/i.test(s) || /^[A-ZÄÖÜ]{2,5}[1-9]\d{0,3}[EH]?$/.test(s)) {
+      return errorResult('Sieht aus wie ein Kfz-Kennzeichen ohne Bindestrich. Bitte mit Bindestrich eingeben, z. B. „M-AB 1234“.');
+    }
     // 3. Telefonnummer
     const ph = analyzePhone(s);
-    if (ph) return ph;
+    if (ph) {
+      if (/^\d{8}$/.test(s) && !buildDate(s.slice(0, 2), s.slice(2, 4), s.slice(4), today).invalid) {
+        ph.warnings.push('Falls ein Geburtsdatum gemeint ist: bitte im Format TT.MM.JJJJ eingeben (' + s.slice(0, 2) + '.' + s.slice(2, 4) + '.' + s.slice(4) + ').');
+      }
+      return ph;
+    }
     if (/^[+\d\s/()-]+$/.test(s) && !/^\d{5}$/.test(s) && !/^\d{1,2}[./]/.test(s)) {
       if (/^\d+$/.test(s) && !s.startsWith('0')) {
         return errorResult('Reine Ziffernfolge nicht eindeutig. Telefonnummern bitte mit Vorwahl (0…/+49…), Versicherungsscheinnummern im Format 94.122.123.4 eingeben.');

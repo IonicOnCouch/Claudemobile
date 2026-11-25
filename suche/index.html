@@ -15,7 +15,7 @@
 
     <form id="searchForm" class="search" autocomplete="off" role="search">
       <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="z. B. Müller, Max 01.01.1980 · M-AB 1234 · 0171 1234567 · 94.122.123.4"
+      <input id="q" type="search" placeholder="z. B. Müller, Max, 01.01.1980 · Berlin · M-AB 1234 · 0171 1234567"
              aria-label="Suchbegriff" spellcheck="false" autofocus>
       <button type="submit">Suchen</button>
     </form>
@@ -31,11 +31,23 @@
 
     <section id="result" class="result" aria-live="polite"></section>
 
+    <details class="howto">
+      <summary>Eingaberegeln &amp; wie erkannt wird</summary>
+      <ul>
+        <li><b>Name:</b> Nachname zuerst. Vorname nur mit Komma dahinter: <code>Müller, Max</code>. Doppelnamen mit Bindestrich, Namenszusätze vorn (<code>von Bergen, Hans</code>).</li>
+        <li><b>Geburtsdatum:</b> nur deutsches Format <code>TT.MM.JJJJ</code> (auch <code>1.4.80</code>).</li>
+        <li><b>Straße:</b> erkannt an Endungen wie -straße/-str./-weg/-allee/-platz/-ring, an einer Hausnummer oder an Anfängen wie „Am“, „Zur“, „An der“.</li>
+        <li><b>Ort:</b> steht hinter einer 5-stelligen PLZ, hinter der Straße oder ist eine bekannte Stadt. Ein einzelner Begriff (z. B. <code>Essen</code>) ist mehrdeutig – es wird eine Alternative angezeigt.</li>
+        <li><b>Kfz-Kennzeichen:</b> nur mit Bindestrich: <code>M-AB 1234</code>.</li>
+      </ul>
+    </details>
+
     <details class="examples" open>
       <summary>Beispiele zum Ausprobieren</summary>
       <div id="examples" class="chips"></div>
     </details>
   </main>
+  <script src="cities.js"></script>
   <script src="parser.js"></script>
   <script src="app.js"></script>
 </body>

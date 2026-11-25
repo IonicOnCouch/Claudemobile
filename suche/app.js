@@ -6,11 +6,11 @@
   const criteria = document.querySelectorAll('#criteria li');
 
   const EXAMPLES = [
-    'Max Mustermann', 'Müller, Anna 12.03.1964', 'Frau Dr. Erika Schmidt geb. Meier *3.4.75',
-    'Hauptstr. 5, 12345 Berlin', 'Hans von Bergen, Am Alten Markt 3, 50667 Köln',
-    'M-AB 1234', 'B MW 123E', 'HH-AB 12H', 'S AB 123 04-10', 'K-06123', 'Y-123 456', 'MAB123',
+    'Müller', 'Müller, Max', 'Berlin', 'Müller, Anna, 12.03.1964', 'Frau Dr. Schmidt, Erika geb. Meier 3.4.75',
+    'Hauptstr. 5, 12345 Berlin', 'von Bergen, Hans, Am Alten Markt 3, 50667 Köln', 'Lindenweg 4, Kleindorf',
+    'M-AB 1234', 'B-MW 123E', 'HH-AB 12H', 'S-AB 123 04-10', 'K-06123', 'Y-123 456',
     '+49 30 1234567', '0151 12345678', 'max.mustermann@example.de', '94.122.123.4',
-    'Max Müller 0171 1234567', '31.02.1980'
+    'Max Müller', 'M AB 1234', '1980-01-01', 'Müller, Max 0171 1234567'
   ];
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

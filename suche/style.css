@@ -90,7 +90,11 @@ details summary { cursor: pointer; color: var(--accent); font-size: .92rem; padd
   background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
   overflow-x: auto; font-size: .85rem; margin: 6px 0 0;
 }
-.examples { margin-top: 24px; }
+.examples, .howto { margin-top: 24px; }
+.howto ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: .92rem; }
+.howto li { margin-bottom: 4px; }
+.howto b { color: var(--text); }
+.howto code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: .85rem; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .chips button {
   border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px;

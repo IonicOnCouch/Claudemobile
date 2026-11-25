@@ -1,4 +1,4 @@
-const P = require('./parser.js');
+require('./cities.js'); const P = require('./parser.js');
 const today = new Date(2026,10,25);
 for (const s of process.argv.slice(2).length ? process.argv.slice(2) : [
  'Max Müller', 'Müller, Max', 'Müller Max', 'Hans Peter von Bergen', 'Max Mustermann 01.01.1980',
